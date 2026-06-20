@@ -59,13 +59,15 @@ CREATE VIEW vw_churn_by_demographics AS
 SELECT
 CASE WHEN d.senior_citizen = 1 THEN 'Senior Citizen' ELSE 'Non-Senior' END AS age_group,
 CASE WHEN d.dependents = 1 THEN 'Has Dependents' ELSE 'No Dependents' END AS dependent_status,
+CASE WHEN d.partner = 1 THEN 'Has Partner' ELSE 'No Partner' END AS partner_status,
+CASE WHEN d.married = 1 THEN 'Married' ELSE 'Not Married' END AS marital_status,
 COUNT(*) AS total_customers,
 SUM(CASE WHEN f.churn_value = 1 THEN 1 ELSE 0 END) AS churned_customers,
 ROUND(SUM(CASE WHEN f.churn_value = 1 THEN 1.0 ELSE 0 END) / COUNT(*) * 100, 2) AS churn_rate_pct,
 ROUND(AVG(f.monthly_charge), 2) AS avg_monthly_charge
 FROM dim_demographics d
 JOIN fact_customers f ON d.customer_id = f.customer_id
-GROUP BY d.senior_citizen, d.dependents;
+GROUP BY d.senior_citizen, d.dependents, d.partner, d.married;
 
 -- All Cities Churn
 CREATE VIEW vw_churn_by_city AS
@@ -146,6 +148,20 @@ ROUND(AVG(f.cltv * 1.0), 2) AS avg_cltv,
 ROUND(SUM(CASE WHEN f.churn_value = 1 THEN f.revenue_at_risk ELSE 0 END), 2) AS revenue_lost
 FROM fact_customers f
 GROUP BY f.is_high_value;
+
+-- Churn by Partner Status
+CREATE VIEW vw_churn_by_partner AS
+SELECT
+CASE WHEN d.partner = 1 THEN 'Has Partner' ELSE 'No Partner' END AS partner_status,
+COUNT(*) AS total_customers,
+SUM(CASE WHEN f.churn_value = 1 THEN 1 ELSE 0 END) AS churned_customers,
+ROUND(SUM(CASE WHEN f.churn_value = 1 THEN 1.0 ELSE 0 END) / COUNT(*) * 100, 2) AS churn_rate_pct,
+ROUND(AVG(f.monthly_charge), 2) AS avg_monthly_charge,
+ROUND(AVG(f.satisfaction_score * 1.0), 2) AS avg_satisfaction_score,
+ROUND(SUM(CASE WHEN f.churn_value = 1 THEN f.revenue_at_risk ELSE 0 END), 2) AS revenue_lost
+FROM dim_demographics d
+JOIN fact_customers f ON d.customer_id = f.customer_id
+GROUP BY d.partner;
 
 -- Verify all views created
 SELECT TABLE_NAME AS view_name

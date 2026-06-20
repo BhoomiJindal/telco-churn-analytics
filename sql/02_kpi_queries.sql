@@ -280,3 +280,18 @@ revenue_lost
 FROM ranked_cities
 ORDER BY churn_rank
 OFFSET 0 ROWS FETCH NEXT 15 ROWS ONLY;
+
+--Churn by Partner Status
+SELECT
+d.partner,
+CASE WHEN d.partner = 1 THEN 'Has Partner' ELSE 'No Partner' END AS partner_status,
+COUNT(*) AS total_customers,
+SUM(CASE WHEN f.churn_value = 1 THEN 1 ELSE 0 END) AS churned_customers,
+ROUND(SUM(CASE WHEN f.churn_value = 1 THEN 1.0 ELSE 0 END) / COUNT(*) * 100, 2) AS churn_rate_pct,
+ROUND(AVG(f.monthly_charge), 2) AS avg_monthly_charge,
+ROUND(AVG(f.satisfaction_score * 1.0), 2) AS avg_satisfaction_score,
+ROUND(SUM(CASE WHEN f.churn_value = 1 THEN f.revenue_at_risk ELSE 0 END), 2) AS revenue_lost
+FROM dim_demographics d
+JOIN fact_customers f ON d.customer_id = f.customer_id
+GROUP BY d.partner
+ORDER BY churn_rate_pct DESC;
